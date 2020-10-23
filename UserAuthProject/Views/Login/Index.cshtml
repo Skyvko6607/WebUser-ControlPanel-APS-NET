@@ -1,0 +1,12 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+@model UserAuthProject.Models.User.UserLoginData
+
+@using (Html.BeginForm("Login", "Login", FormMethod.Post))
+{
+    @Html.TextBoxFor(data => data.UsernameOrEmail);
+    @Html.TextBoxFor(data => data.Password);
+    <button type="submit">Login</button>
+}
