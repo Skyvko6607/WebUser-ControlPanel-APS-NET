@@ -7,6 +7,7 @@ namespace UserAuthProject.Services.Interfaces
 {
     public interface IPasswordEncryptionService
     {
-        string EncryptPassword(string password);
+        string CreateHash(string password, string salt);
+        string CreateSalt();
     }
 }

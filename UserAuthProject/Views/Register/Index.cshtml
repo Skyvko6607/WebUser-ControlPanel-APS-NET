@@ -1,0 +1,16 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+@model UserAuthProject.Models.User.UserRegisterData
+
+@using (Html.BeginForm("RegisterUser", "Register", FormMethod.Post))
+{
+    <div>
+        <p>Username: @Html.TextBoxFor(data => data.Username)</p>
+        <p>Email: @Html.TextBoxFor(data => data.Email)</p>
+        <p>Password: @Html.TextBoxFor(data => data.Password)</p>
+    </div>
+
+    <button type="submit">Register</button>
+}

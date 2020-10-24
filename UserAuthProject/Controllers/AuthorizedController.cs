@@ -12,23 +12,13 @@ namespace UserAuthProject.Controllers
     public class AuthorizedController : Controller
     {
         public IAuthenticationService AuthenticationService { get; set; }
+        public IHttpContextAccessor HttpContextAccessor { get; set; }
 
-        public AuthorizedController(IAuthenticationService authenticationService)
+        public AuthorizedController(IAuthenticationService authenticationService,
+            IHttpContextAccessor httpContextAccessor)
         {
             this.AuthenticationService = authenticationService;
-        }
-
-        public bool IsAuthenticated()
-        {
-            if (HttpContext.Session.GetString("SessionKey") != null)
-            {
-                if (AuthenticationService.IsValidSessionKey(HttpContext.Session.GetString("SessionKey")))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            this.HttpContextAccessor = httpContextAccessor;
         }
     }
 }

@@ -8,6 +8,8 @@ namespace UserAuthProject.Models.User
         public string Username { get; set; }
         public string Email { get; set; }
         public string PasswordEncrypted { get; set; }
+        public string PasswordSalt { get; set; }
         public DateTime RegistrationDate { get; set; } = DateTime.Now;
+        public string Token { get; set; }
     }
 }

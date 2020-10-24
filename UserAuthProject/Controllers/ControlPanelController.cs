@@ -11,19 +11,20 @@ namespace UserAuthProject.Controllers
     [Route("api/[controller]")]
     public class ControlPanelController : AuthorizedController
     {
-        public ControlPanelController(IAuthenticationService authenticationService) : base(authenticationService)
+        public ControlPanelController(IAuthenticationService authenticationService,
+            IHttpContextAccessor httpContextAccessor) : base(authenticationService, httpContextAccessor)
         {
         }
 
         [HttpGet]
         public IActionResult Index()
         {
-            if (!IsAuthenticated())
+            if (!AuthenticationService.IsAuthenticated(HttpContextAccessor))
             {
                 return RedirectToAction("Index", "Login");
             }
+
             return View();
         }
-
     }
 }

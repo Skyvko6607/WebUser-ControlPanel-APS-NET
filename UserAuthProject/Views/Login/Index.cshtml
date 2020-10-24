@@ -4,9 +4,11 @@
 
 @model UserAuthProject.Models.User.UserLoginData
 
-@using (Html.BeginForm("Login", "Login", FormMethod.Post))
+@using (Html.BeginForm("LoginUser", "Login", FormMethod.Post))
 {
-    @Html.TextBoxFor(data => data.UsernameOrEmail);
-    @Html.TextBoxFor(data => data.Password);
+    <div>
+        <p>Username or Email: @Html.TextBoxFor(data => data.UsernameOrEmail)</p>
+        <p>Password: @Html.TextBoxFor(data => data.Password)</p>
+    </div>
     <button type="submit">Login</button>
 }
