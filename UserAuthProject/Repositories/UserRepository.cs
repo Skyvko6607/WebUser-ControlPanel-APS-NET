@@ -11,22 +11,22 @@ namespace UserAuthProject.Repositories
 {
     public class UserRepository : IUserRepository
     {
-        public UserDbContext UserDbContext { get; set; }
+        private GlobalDbContext GlobalDbContext { get; set; }
 
-        public UserRepository(UserDbContext userDbContext)
+        public UserRepository(GlobalDbContext globalDbContext)
         {
-            this.UserDbContext = userDbContext;
+            this.GlobalDbContext = globalDbContext;
         }
 
         public async Task<User> GetUserById(Guid id) =>
-            await UserDbContext.Users.Where(user => user.Id == id).FirstOrDefaultAsync();
+            await GlobalDbContext.Users.Where(user => user.Id == id).FirstOrDefaultAsync();
 
         public async Task<User> GetUserByUsername(string username) =>
-            await UserDbContext.Users.Where(user =>
+            await GlobalDbContext.Users.Where(user =>
                 user.Username.Equals(username, StringComparison.OrdinalIgnoreCase)).FirstOrDefaultAsync();
 
         public async Task<User> GetUserByEmail(string email) =>
-            await UserDbContext.Users.Where(user =>
+            await GlobalDbContext.Users.Where(user =>
                 user.Email.Equals(email, StringComparison.OrdinalIgnoreCase)).FirstOrDefaultAsync();
 
         public async Task<User> AddUser(User user)
@@ -36,8 +36,8 @@ namespace UserAuthProject.Repositories
                 return null;
             }
 
-            var newUser = await UserDbContext.Users.AddAsync(user);
-            await UserDbContext.SaveChangesAsync();
+            var newUser = await GlobalDbContext.Users.AddAsync(user);
+            await GlobalDbContext.SaveChangesAsync();
             return newUser.Entity;
         }
 
@@ -48,8 +48,8 @@ namespace UserAuthProject.Repositories
                 return null;
             }
 
-            var newUser = UserDbContext.Users.Update(user);
-            await UserDbContext.SaveChangesAsync();
+            var newUser = GlobalDbContext.Users.Update(user);
+            await GlobalDbContext.SaveChangesAsync();
             return newUser.Entity;
         }
 
@@ -60,8 +60,8 @@ namespace UserAuthProject.Repositories
                 return;
             }
 
-            UserDbContext.Users.Remove(user);
-            await UserDbContext.SaveChangesAsync();
+            GlobalDbContext.Users.Remove(user);
+            await GlobalDbContext.SaveChangesAsync();
         }
     }
 }

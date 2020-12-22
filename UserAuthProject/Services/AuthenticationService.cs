@@ -1,10 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.IdentityModel.Tokens;
 using UserAuthProject.Controllers;
 using UserAuthProject.Exceptions;
 using UserAuthProject.Models.User;
@@ -45,7 +49,9 @@ namespace UserAuthProject.Services
                 return null;
             }
 
-            return await GenerateSessionKey(user);
+            var token = GenerateSessionKey(user.Id);
+            user.Token = token;
+            return await UserRepository.UpdateUser(user);
         }
 
         public async Task Logout(Guid id)
@@ -78,23 +84,38 @@ namespace UserAuthProject.Services
             }
 
             var salt = PasswordEncryptionService.CreateSalt();
+            var id = new Guid();
+            var token = GenerateSessionKey(id);
             var user = new User()
             {
+                Id = id,
                 Username = userRegisterData.Username,
                 Email = userRegisterData.Email,
                 PasswordSalt = salt,
-                PasswordEncrypted = PasswordEncryptionService.CreateHash(userRegisterData.Password, salt)
+                PasswordEncrypted = PasswordEncryptionService.CreateHash(userRegisterData.Password, salt),
+                Token = token
             };
             var registeredUser = await UserRepository.AddUser(user);
-            return await GenerateSessionKey(registeredUser);
+            return registeredUser;
         }
 
-        public async Task<User> GenerateSessionKey(User user)
+        public string GenerateSessionKey(Guid id)
         {
-            var key = Guid.NewGuid().ToString();
-            user.Token = key;
-            var newUser = await UserRepository.UpdateUser(user);
-            return newUser;
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes("7W6FueCxVULp0tBDR4QD");
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new Claim[]
+                {
+                    new Claim(ClaimTypes.Name, id.ToString())
+                }),
+                Expires = DateTime.UtcNow.AddMinutes(30),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key),
+                    SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
         }
 
         public async Task<bool> IsValidSessionKey(Guid id, string sessionKey)
@@ -105,21 +126,6 @@ namespace UserAuthProject.Services
                 return await new Task<bool>(() => false);
             }
             return user.Token.Equals(sessionKey);
-        }
-
-        public bool IsAuthenticated(IHttpContextAccessor httpContextAccessor)
-        {
-            string sesKey = LoginController.ReadCookie(httpContextAccessor, LoginController.SessionKeyProperty);
-            string userKey = LoginController.ReadCookie(httpContextAccessor, LoginController.UserIdProperty);
-            if (!string.IsNullOrEmpty(sesKey) && !string.IsNullOrEmpty(userKey))
-            {
-                if (IsValidSessionKey(Guid.Parse(userKey), sesKey).Result)
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
     }
 }

@@ -16,6 +16,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
+using UserAuthProject.Controllers;
 using UserAuthProject.Models.DbContexts;
 using UserAuthProject.Repositories;
 using UserAuthProject.Repositories.Interfaces;
@@ -44,7 +45,7 @@ namespace UserAuthProject
 
             services.Configure<IISServerOptions>(options => { options.AllowSynchronousIO = true; });
 
-            services.AddDbContext<UserDbContext>(options =>
+            services.AddDbContext<GlobalDbContext>(options =>
                 {
                     options.UseMySql(Configuration["ConnectionStrings:DbConnection"]);
                 }
@@ -63,6 +64,55 @@ namespace UserAuthProject
             services.AddScoped<IAuthenticationService, AuthenticationService>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IPasswordEncryptionService, PasswordEncryptionService>();
+            services.AddScoped<IReviewDataRepository, ReviewDataRepository>();
+            services.AddScoped<ICommentDataRepository, CommentDataRepository>();
+            services.AddScoped<IProductsRepository, ProductsRepository>();
+
+            var key = Encoding.ASCII.GetBytes("7W6FueCxVULp0tBDR4QD");
+            services.AddAuthentication(x =>
+                {
+                    x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                    x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                })
+                .AddJwtBearer(x =>
+                {
+                    x.RequireHttpsMetadata = false;
+                    x.SaveToken = true;
+                    x.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuerSigningKey = true,
+                        IssuerSigningKey = new SymmetricSecurityKey(key),
+                        ValidateIssuer = false,
+                        ValidateAudience = false,
+                        ClockSkew = TimeSpan.Zero
+                    };
+                    x.Events = new JwtBearerEvents
+                    {
+                        // ...
+                        OnMessageReceived = context =>
+                        {
+                            string authorization = IAuthenticationService.ReadCookie(context, LoginController.SessionKeyProperty);
+
+                            // If no authorization header found, nothing to process further
+                            if (string.IsNullOrEmpty(authorization))
+                            {
+                                context.NoResult();
+                                return Task.CompletedTask;
+                            }
+
+                            context.Token = authorization;
+
+                            // If no token found, no further work possible
+                            if (string.IsNullOrEmpty(context.Token))
+                            {
+                                context.NoResult();
+                                return Task.CompletedTask;
+                            }
+
+                            return Task.CompletedTask;
+                        }
+                    };
+                });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -84,6 +134,7 @@ namespace UserAuthProject
             app.UseStaticFiles();
             app.UseRouting();
             app.UseAuthorization();
+            app.UseAuthentication();
             app.UseCookiePolicy();
             app.UseCors(x => x
                 .AllowAnyOrigin()
@@ -96,8 +147,7 @@ namespace UserAuthProject
                     template: "{controller=Home}/{action=Index}/{id?}");
                 routes.MapRoute(
                     name: "API",
-                    template: "api/[controller]/{action}/{id}",
-                    defaults: new {controller = "ControlPanel"});
+                    template: "api/{controller=ControlPanel}/{action=Index}/{id?}");
             });
         }
     }

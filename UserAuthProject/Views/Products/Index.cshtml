@@ -1,0 +1,69 @@
+﻿@{
+    ViewData["Title"] = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@using UserAuthProject.Repositories.Interfaces
+@model IEnumerable<UserAuthProject.Models.Webshop.Product>
+@inject IReviewDataRepository ReviewDataRepository
+@inject ICommentDataRepository CommentDataRepository
+
+<h1>Index</h1>
+
+@foreach (var product in Model)
+{
+    <div>
+        <hr/>
+        <h3>Product:</h3>
+        <p>Id: @product.Id</p>
+        <p>Name: @product.Name</p>
+        <p>Description: @product.Description</p>
+        <p>Price: $@product.Price</p>
+        <hr/>
+        <div>
+            <h3>Reviews:</h3>
+            @{
+                var review = ReviewDataRepository.GetProductReviews(product.Id).Result;
+                @foreach (var reviewData in review)
+                {
+                    <hr/>
+                    <div>
+                        <p>User: @reviewData.User.Username</p>
+                        <p>Review: @reviewData.Score/5</p>
+                        <p>Date: @reviewData.Date</p>
+                        <p>Comment: @reviewData.Comment</p>
+                    </div>
+                }
+            }
+        </div>
+        <hr/>
+        <div>
+            <h3>Comments:</h3>
+            @{
+                var comments = CommentDataRepository.GetProductComments(product.Id).Result;
+                foreach (var commentDto in comments)
+                {
+                    <hr/>
+                    <div>
+                        <p>User: @commentDto.Question.User.Username</p>
+                        <p>Date: @commentDto.Question.Date</p>
+                        <p>Question: @commentDto.Question.Question</p>
+                        <div style="margin-left: 20px">
+                            @{
+                                commentDto.AnswerData.Sort((data, data2) => data.Date.CompareTo(data2.Date));
+                                foreach (var answerData in commentDto.AnswerData)
+                                {
+                                    <hr/>
+                                    <p>User: @answerData.User.Username</p>
+                                    <p>Date: @answerData.Date</p>
+                                    <p>Answer: @answerData.Answer</p>
+                                }
+                            }
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+        <hr/>
+    </div>
+}

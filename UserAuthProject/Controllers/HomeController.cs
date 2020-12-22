@@ -6,16 +6,19 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using UserAuthProject.Models;
+using UserAuthProject.Repositories.Interfaces;
 
 namespace UserAuthProject.Controllers
 {
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
+        private IReviewDataRepository ReviewDataRepository { get; set; }
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(ILogger<HomeController> logger, IReviewDataRepository reviewDataRepository)
         {
             _logger = logger;
+            ReviewDataRepository = reviewDataRepository;
         }
 
         public IActionResult Index()
@@ -32,6 +35,11 @@ namespace UserAuthProject.Controllers
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+
+        public IActionResult Reviews(Guid productId)
+        {
+            return View(ReviewDataRepository.GetProductReview(productId).Result);
         }
     }
 }

@@ -1,20 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.Extensions.Primitives;
 using UserAuthProject.Models.User;
 using UserAuthProject.Repositories.Interfaces;
-using UserAuthProject.Services.Interfaces;
+using IAuthenticationService = UserAuthProject.Services.Interfaces.IAuthenticationService;
 
 namespace UserAuthProject.Controllers
 {
     public class LoginController : Controller
     {
         public static readonly string SessionKeyProperty = "SessionKey";
-        public static readonly string UserIdProperty = "UserId";
 
         public IUserRepository UserRepository { get; set; }
         public IAuthenticationService AuthenticationService { get; set; }
@@ -30,17 +35,18 @@ namespace UserAuthProject.Controllers
 
         public IActionResult Index()
         {
-            if (AuthenticationService.IsAuthenticated(HttpContextAccessor))
+            if (!string.IsNullOrEmpty(User.FindFirstValue(ClaimTypes.Name)))
             {
                 return RedirectToAction("Index", "ControlPanel");
             }
+
             return View();
         }
 
         [HttpPost]
         public IActionResult LoginUser(UserLoginData loginData)
         {
-            if (AuthenticationService.IsAuthenticated(HttpContextAccessor))
+            if (!string.IsNullOrEmpty(User.FindFirstValue(ClaimTypes.Name)))
             {
                 return RedirectToAction("Index", "ControlPanel");
             }
@@ -50,32 +56,24 @@ namespace UserAuthProject.Controllers
             {
                 return RedirectToAction("Index", "Login");
             }
-            var token = userData.Token;
-            if (string.IsNullOrEmpty(token))
-            {
-                return RedirectToAction("Error", "Home");
-            }
-            HttpContextAccessor.HttpContext.Response.Cookies.Append(UserIdProperty, userData.Id.ToString());
-            HttpContextAccessor.HttpContext.Response.Cookies.Append(SessionKeyProperty, token);
+
+            HttpContextAccessor.HttpContext.Response.Cookies.Append(SessionKeyProperty, userData.Token);
+
             return RedirectToAction("Index", "ControlPanel");
         }
 
-        public static string ReadCookie(IHttpContextAccessor httpContextAccessor, string cookie)
+        public IActionResult Logout()
         {
-            var listKeys = httpContextAccessor.HttpContext.Request.Cookies.Keys;
-            string sesKey = null;
-            foreach (var s in listKeys)
+            if (string.IsNullOrEmpty(User.FindFirstValue(ClaimTypes.Name)))
             {
-                var read = httpContextAccessor.HttpContext.Request.Cookies[s];
-                if (s.Equals(cookie))
-                {
-                    sesKey = read;
-                    break;
-                }
+                return RedirectToAction("Index", "Home");
             }
 
-            return sesKey;
+            Guid id = Guid.Parse(User.FindFirstValue(ClaimTypes.Name));
+            AuthenticationService.Logout(id);
+            HttpContextAccessor.HttpContext.Response.Cookies.Delete(SessionKeyProperty);
+
+            return RedirectToAction("Index", "Home");
         }
     }
-
 }

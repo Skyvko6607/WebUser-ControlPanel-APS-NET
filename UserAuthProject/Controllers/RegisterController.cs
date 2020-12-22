@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -26,7 +27,7 @@ namespace UserAuthProject.Controllers
 
         public IActionResult Index()
         {
-            if (AuthenticationService.IsAuthenticated(HttpContextAccessor))
+            if (!string.IsNullOrEmpty(User.FindFirstValue(ClaimTypes.Name)))
             {
                 return RedirectToAction("Index", "ControlPanel");
             }
@@ -36,7 +37,7 @@ namespace UserAuthProject.Controllers
         [HttpPost]
         public IActionResult RegisterUser(UserRegisterData registerData)
         {
-            if (AuthenticationService.IsAuthenticated(HttpContextAccessor))
+            if (!string.IsNullOrEmpty(User.FindFirstValue(ClaimTypes.Name)))
             {
                 return RedirectToAction("Index", "ControlPanel");
             }
@@ -46,13 +47,6 @@ namespace UserAuthProject.Controllers
             {
                 return RedirectToAction("Index", "Register");
             }
-            var token = userData.Token;
-            if (string.IsNullOrEmpty(token))
-            {
-                return RedirectToAction("Error", "Home");
-            }
-            HttpContextAccessor.HttpContext.Response.Cookies.Append(LoginController.UserIdProperty, userData.Id.ToString());
-            HttpContextAccessor.HttpContext.Response.Cookies.Append(LoginController.SessionKeyProperty, token);
             return RedirectToAction("Index", "ControlPanel");
         }
     }
